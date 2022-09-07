@@ -1,26 +1,39 @@
-﻿namespace Task3
+﻿using System.Reflection.Metadata.Ecma335;
+
+namespace Task3
 {
     public class Task3
     {
-/*
- * Прежде чем приступать к выполнению заданий, допишите к ним тесты.
- */
+        /*
+         * Прежде чем приступать к выполнению заданий, допишите к ним тесты.
+         */
 
-/*
- * Задание 3.1. Для данного вещественного x найти значение следующей функции f, принимающей значения целого типа:
- * 	        0,	если x < 0,
- * f(x) = 	1,	если x принадлежит [0, 1), [2, 3), …,
-           −1,	если x принадлежит [1, 2), [3, 4), … .
- */
-        internal static double F(double x) => throw new NotImplementedException();
+        /*
+         * Задание 3.1. Для данного вещественного x найти значение следующей функции f, принимающей значения целого типа:
+         * 	        0,	если x < 0,
+         * f(x) = 	1,	если x принадлежит [0, 1), [2, 3), …,
+                   −1,	если x принадлежит [1, 2), [3, 4), … .
+         */
+        internal static double F(double x)
+        {
+            if (x < 0) return 0;
 
-/*
- * Задание 3.2. Дан номер года (положительное целое число). Определить количество дней в этом году,
- * учитывая, что обычный год насчитывает 365 дней, а високосный — 366 дней. Високосным считается год,
- * делящийся на 4, за исключением тех годов, которые делятся на 100 и не делятся на 400
- * (например, годы 300, 1300 и 1900 не являются високосными, а 1200 и 2000 — являются).
- */
-        internal static int NumberOfDays(int year) => throw new NotImplementedException();
+            int val = (int)x;
+
+            return val % 2 == 0 ? 1 : -1;
+        }
+
+        /*
+         * Задание 3.2. Дан номер года (положительное целое число). Определить количество дней в этом году,
+         * учитывая, что обычный год насчитывает 365 дней, а високосный — 366 дней. Високосным считается год,
+         * делящийся на 4, за исключением тех годов, которые делятся на 100 и не делятся на 400
+         * (например, годы 300, 1300 и 1900 не являются високосными, а 1200 и 2000 — являются).
+         */
+        internal static int NumberOfDays(int year) 
+        {
+            if (year % 100 == 0 && year % 400 != 0 || year % 4 != 0) return 365;
+            else return 366;
+        }
 
 /*
  * Задание 3.3. Локатор ориентирован на одну из сторон света («С» — север, «З» — запад,
@@ -31,9 +44,15 @@
  */
         internal static char Rotate2(char orientation, int cmd1, int cmd2)
         {
-            char rotate1(char orientation, int cmd) => throw new NotImplementedException();
+            char[] m = { 'С', 'З', 'Ю', 'В' };
 
-            throw new NotImplementedException();
+            char rotate1(char orientation, int cmd)
+            {
+                return m[(Array.IndexOf(m, orientation) + cmd) % 4];
+            };
+
+            return rotate1(rotate1(orientation, cmd1), cmd2);
+
         }
 
 /*
@@ -47,13 +66,23 @@
  */
         internal static String AgeDescription(int age)
         {
-            throw new NotImplementedException();
+            string[] m1 = {"двадцать","тридцать","сорок","пятьдесят","шестьдесят"};
+            string[] m2 = 
+            {
+                " лет"," один год"," два года",
+                " три года"," четыре года"," пять лет",
+                " шесть лет"," семь лет"," восемь лет"," девять лет"
+            };
+
+            return $"{m1[age / 10 - 2]}{m2[age % 10]}";
         }
 
         public static void Main(string[] args)
         {
-            throw new NotImplementedException(
-                "Вызовите здесь все перечисленные в классе функции, как это сделано в предыдущих заданиях");
+            F(8.9);
+            NumberOfDays(2022);
+            Rotate2('С', 2, 1);
+            Console.WriteLine(AgeDescription(34));
         }
     }
 }

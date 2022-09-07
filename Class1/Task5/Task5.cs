@@ -13,7 +13,8 @@ namespace Task5
         public static void Main(string[] args)
         {
             DemoInput(args);
-            ComputeFib(args);
+
+            Console.WriteLine($"Число фибоначи #{args[0]} равно {ComputeFib(args)}");
         }
 
 /*
@@ -47,12 +48,29 @@ namespace Task5
 
         internal static BigInteger Fib(int n)
         {
-            throw new NotImplementedException();
+            BigInteger a = 1;
+            BigInteger b = 0;
+            BigInteger c;
+
+            for (int i = 1; i <= n; i++) 
+            {
+                c = a;
+                a = b;
+                b = c + b;
+            }
+
+            return b;
         }
 
-        internal static void ComputeFib(string[] args)
+        internal static BigInteger ComputeFib(string[] args)
         {
-            throw new NotImplementedException();
+            int n;
+            if (args.Length > 0) n = int.Parse(args[0]);
+            else n = int.Parse(Console.ReadLine());
+
+            BigInteger digitFib = Fib(n);
+            Console.WriteLine(digitFib);
+            return digitFib;
         }
     }
 }

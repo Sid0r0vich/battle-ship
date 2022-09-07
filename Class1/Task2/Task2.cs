@@ -1,4 +1,6 @@
-﻿namespace Task2
+﻿using System.Reflection.Metadata.Ecma335;
+
+namespace Task2
 {
     public class Task2
     {
@@ -17,27 +19,31 @@
  */
         internal static int Min3(int a, int b, int c)
         {
-            throw new NotImplementedException();
+            int val;
+            val = a >= b ? b : a;
+            val = val >= c ? c : val;
+            return val;
+
         }
 
-/*
- * Задание 2.2. Напишите функцию `max3`, которая вычисляет наибольшее из трёх заданных чисел.
- * Функция должна иметь вид одного выражения (https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/statements-expressions-operators/expression-bodied-members#methods).
- * Использование функций стандартной библиотеки в решении не допускается.
- */
-        internal static int Max3(int a, int b, int c) => throw new NotImplementedException();
+        /*
+         * Задание 2.2. Напишите функцию `max3`, которая вычисляет наибольшее из трёх заданных чисел.
+         * Функция должна иметь вид одного выражения (https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/statements-expressions-operators/expression-bodied-members#methods).
+         * Использование функций стандартной библиотеки в решении не допускается.
+         */
+        internal static int Max3(int a, int b, int c) => (a >= b ? a : b) >= c ? (a >= b ? a : b) : c;
 
         /*
  * Задание 2.3. Дано значение угла α (типа Double) в градусах. Определите значение этого же угла в радианах,
  * учитывая, что 180° = π радианов (константа Math.PI).
  */
-        internal static double Deg2Rad(double aDeg) => throw new NotImplementedException();
+        internal static double Deg2Rad(double aDeg) => aDeg / 180 * Math.PI;
 
 /*
 * Задание 2.4. Дано значение угла α в радианах. Определить значение этого же угла в градусах,
 * учитывая, что 180° = π радианов.
 */
-        internal static double Rad2Deg(double aRad) => throw new NotImplementedException();
+        internal static double Rad2Deg(double aRad) => aRad / Math.PI * 180;
 
         public static void Main(string[] args)
         {
