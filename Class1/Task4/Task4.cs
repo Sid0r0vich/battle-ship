@@ -17,19 +17,22 @@
  */
         internal static void PrintFrame(int width, int height, char frameChar = '*')
         {
-            for (int i = 0; i < width; i++) Console.Write(frameChar);
+            for (int i = 0; i < width; i++) 
+                Console.Write(frameChar);
 
             for (int i = 2; i < height; i++)
             {
-                Console.Write($"\n{frameChar}");
-                for (int j = 2; j < width; j++) Console.Write(' ');
-                Console.Write(frameChar);
-                Console.Write('\n');
+                Console.Write($"\r\n{frameChar}");
+                for (int j = 2; j < width; j++)
+                    Console.Write(' ');
+                
+                Console.WriteLine(frameChar);
             }
 
-            for (int i = 0; i < width; i++) Console.Write(frameChar);
+            for (int i = 0; i < width; i++) 
+                Console.Write(frameChar);
 
-            Console.Write('\n');
+            Console.WriteLine("");
         }
 
 /*
@@ -77,8 +80,9 @@
 
             while (a != b)
             {
-                if (a > b) a -= b;
-                else b -= a;
+                if (a == 0 || b == 0) return a + b;
+                if (a > b) a %= b;
+                else b %= a;
             }
 
             return a;

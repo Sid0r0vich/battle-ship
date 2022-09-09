@@ -29,10 +29,7 @@ public class Tests
     public void TestPrintFrame1()
     {
         PrintFrame(5, 3, '+');
-        AssertOut(
-@"+++++
-+   +
-+++++");
+        AssertOut("+++++\r\n+   +\r\n+++++");
     }
 
     [Test]
