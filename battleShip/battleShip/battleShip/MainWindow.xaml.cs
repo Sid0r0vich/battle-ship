@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,12 +11,24 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+using System.Collections.Generic;
+using System.Threading;
+using System.Media;
+using System.Windows.Controls.Primitives;
+
+
 namespace battleShip
 {
     public enum Turn
     {
         First,
         Second,
+    }
+
+    public enum Type
+    {
+        Human,
+        Computer,
     }
 
     public class Field
@@ -35,7 +44,6 @@ namespace battleShip
         public Field(MainWindow owner, int row, int column, Grid grid)
         {
             this.owner = owner;
-            this.button.Click += this.owner.Select_Field;
             this.button.Content = this.image;
             this.button.Background = new SolidColorBrush(Color.FromArgb(150, 169, 213, 255));
 
@@ -51,11 +59,17 @@ namespace battleShip
             else if (state == 2)
                 this.image.Source = Field.point;
         }
+
+        public void AddClick()
+        {
+            this.button.Click += this.owner.SelectField;
+        }
     }
 
     public class Player
     {
         public int[,] Pos;
+        public int[,] OpponentPos;
 
         public int GetState(Tuple<int, int> coords)
         {
@@ -73,10 +87,10 @@ namespace battleShip
 
     public class Human : Player
     {
-        public int[,] OpponentPos = new int[10, 10];
-
         public Human()
         {
+            this.OpponentPos = new int[10, 10];
+
             for (int i = 0; i < 10; i++)
                 for (int j = 0; j < 10; j++)
                     OpponentPos[i, j] = 0;
@@ -104,6 +118,8 @@ namespace battleShip
 
     public class AI : Player
     {
+        private static Random random = new Random();
+
         public AI()
         {
             this.Pos = new int[10, 10]
@@ -120,39 +136,84 @@ namespace battleShip
                 { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
             };
         }
+
+        public static Tuple<int, int>? GenerateMove(int[,] Pos, int count)
+        {
+            int number = AI.random.Next(count);
+            count = 0;
+
+            for (int i = 0; i < 10; i++)
+                for (int j = 0; j < 10; j++)
+                {
+                    if (Pos[i, j] == 0 || Pos[i, j] == 1)
+                    {
+                        if (count == number)
+                            return new Tuple<int, int>(i, j);
+
+                        count++;
+                    }
+                }
+
+            return null;
+        }
     }
 
     public partial class MainWindow : Window
     {
-        private Field[,] Fields = new Field[10, 10];
-        private Field[,] OpponentFields = new Field[10, 10];
-        public Human player;
-        public AI ai;
+        private List<Player> Players;
+        private List<Field[,]> Fields;
+
+        private Human human; public AI ai;
+
+        private static MediaPlayer mediaPlayer = new MediaPlayer();
+
+        private int MoveCount;
+
+        private static string path = "C:\\Users\\Overlord\\git\\battleShip\\battleShip\\music\\";
+
+        private static List<Uri> trecks = new List<Uri>()
+        {
+            new Uri($"{path}есть пробитие.mp3"),
+            new Uri($"{path}есть попадание.mp3"),
+            new Uri($"{path}готов.mp3"),
+            new Uri($"{path}орудие повреждено.mp3"),
+            new Uri($"{path}повреждение боеукладки.mp3"),
+            new Uri($"{path}вращение башни невозможно.mp3"),
+        };
+
 
         public MainWindow()
         {
             InitializeComponent();
 
-            this.player = new Human();
-            this.ai = new AI();
+            human = new Human();
+            ai = new AI();
+
+            Players = new List<Player>() { human, ai };
+
+            Fields = new List<Field[,]>();
+            Fields.Add(new Field[10, 10]);
+            Fields.Add(new Field[10, 10]);
 
             CreateAllMap();
             RenderAllMap();
+
+            this.MoveCount = 0;
         }
 
         private void CreateAllMap()
         {
-            CreateMap(Fields, this.board_grid_1);
-            CreateMap(OpponentFields, this.board_grid_2);
+            CreateMap(this.board_grid_1, addClick : false, Type.Human);
+            CreateMap(this.board_grid_2, addClick : true, Type.Computer);
         }
 
         private void RenderAllMap()
         {
-            RenderMap(Fields, this.player.Pos);
-            RenderMap(OpponentFields, this.player.OpponentPos);
+            RenderMap(this.Players[(int)Type.Human].Pos, Type.Human);
+            RenderMap(this.Players[(int)Type.Human].OpponentPos, Type.Computer);
         }
 
-        private void CreateMap(Field[,] fields, Grid grid)
+        private void CreateMap(Grid grid, bool addClick, Type type)
         {
 
             for (int i = 0; i < 10; i++)
@@ -160,12 +221,13 @@ namespace battleShip
                 for (int j = 0; j < 10; j++)
                 {
                     Field field = new Field(this, i, j, grid);
-                    fields[i, j] = field;
+                    if (addClick) field.AddClick();
+                    this.Fields[(int)type][i, j] = field;
                 }
             }
         }
 
-        private void RenderMap(Field[,] fields, int[,] Pos)
+        private void RenderMap(int[,] Pos, Type type)
         {
             for (int i = 0; i < 10; i++)
             {
@@ -181,24 +243,53 @@ namespace battleShip
                         if (j < 9 && Math.Abs(Pos[i, j + 1]) == 1) right = 0;
                         if (i < 9 && Math.Abs(Pos[i + 1, j]) == 1) bottom = 0;
 
-                        fields[i, j].button.BorderThickness = new Thickness(left, top, right, bottom);
-                        fields[i, j].button.BorderBrush = Brushes.Blue;
+                        Fields[(int)type][i, j].button.BorderThickness = new Thickness(left, top, right, bottom);
+                        Fields[(int)type][i, j].button.BorderBrush = Brushes.Blue;
                     }
                 }
             }
         }
 
-        public void Select_Field(object sender, RoutedEventArgs e)
+        public async void SelectField(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
             Tuple<int, int> coords = GetCoords(button);
-            int state = ai.GetState(coords);
+
+            MakeMove(coords, Type.Human);
+
+            await Task.Delay(800);
+            this.GenerateMove(this.human.Pos, 100 - this.MoveCount);
+            this.MoveCount++;
+        }
+
+        private void MakeMove(Tuple<int, int> coords, Type type)
+        {
+            int state = Players[(int)(type + 1) % 2].GetState(coords);
 
             if (state == 2 || state == -1)
             {
-                OpponentFields[coords.Item1, coords.Item2].SetImage(state);
-                player.UpdateState(coords, state);
-                RenderMap(OpponentFields, this.player.OpponentPos);
+                this.Fields[(int)(type + 1) % 2][coords.Item1, coords.Item2].SetImage(state);
+
+                if (type == Type.Human)
+                {
+                    this.human.UpdateState(coords, state);
+                    RenderMap(Players[(int)type].OpponentPos, Type.Computer);
+                }
+                else
+                    RenderMap(Players[(int)type].Pos, Type.Human);
+            }
+
+            if (state == -1)
+                MainWindow.PlayMusic(new Random().Next(3) + (int)type * 3);
+        }
+
+        private void GenerateMove(int[,] Pos, int count)
+        {
+            Tuple<int, int>? coords = AI.GenerateMove(Pos, count);
+
+            if (coords != null)
+            {
+                MakeMove(coords, Type.Computer);
             }
         }
 
@@ -208,6 +299,12 @@ namespace battleShip
             int column = Grid.GetColumn(field);
 
             return new Tuple<int, int>(row, column);
+        }
+
+        private static void PlayMusic(int treck)
+        {
+            MainWindow.mediaPlayer.Open(trecks[treck]);
+            MainWindow.mediaPlayer.Play();
         }
     }
 }
