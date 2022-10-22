@@ -15,7 +15,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Media;
 using System.Windows.Controls.Primitives;
-
+using System.Windows.Media.Media3D;
+using System.Diagnostics.Eventing.Reader;
+using System.Security.Cryptography.X509Certificates;
+using System.Runtime.CompilerServices;
+using System.CodeDom;
 
 namespace battleShip
 {
@@ -69,7 +73,23 @@ namespace battleShip
     public class Player
     {
         public int[,] Pos;
-        public int[,] OpponentPos;
+
+        public Player()
+        {
+            this.Pos = new int[10, 10]
+            {
+                { 0, 0, 0, 1, 0, 0, 0, 0, 1, 0 },
+                { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                { 0, 1, 0, 0, 0, 1, 1, 1, 0, 0 },
+                { 0, 1, 0, 1, 0, 0, 0, 0, 0, 0 },
+                { 0, 1, 0, 1, 0, 0, 1, 0, 0, 0 },
+                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
+                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
+                { 0, 0, 0, 1, 1, 1, 0, 0, 0, 0 },
+                { 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
+            };
+        }
 
         public int GetState(Tuple<int, int> coords)
         {
@@ -83,59 +103,105 @@ namespace battleShip
 
             return state;
         }
-    }
 
-    public class Human : Player
-    {
-        public Human()
+        public List<Tuple<int, int>> GetComponents(Tuple<int, int> coords)
         {
-            this.OpponentPos = new int[10, 10];
+            List<Tuple<int, int>> coordsList = new List<Tuple<int, int>>();
+            List<Tuple<int, int>> CheckCoordsList = new List<Tuple<int, int>>();
+            coordsList.Add(coords);
+            CheckCoordsList.Add(coords);
 
-            for (int i = 0; i < 10; i++)
-                for (int j = 0; j < 10; j++)
-                    OpponentPos[i, j] = 0;
-
-            this.Pos = new int[10, 10]
+            while (CheckCoordsList.Count > 0)
             {
-                { 0, 0, 0, 1, 0, 0, 0, 0, 1, 0 },
-                { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 1, 0, 0, 0, 1, 1, 1, 0, 0 },
-                { 0, 1, 0, 1, 0, 0, 0, 0, 0, 0 },
-                { 0, 1, 0, 1, 0, 0, 1, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
-                { 0, 0, 0, 1, 1, 1, 0, 0, 0, 0 },
-                { 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
-            };
+                Tuple<int, int> CheckCoord = CheckCoordsList[0];
+                for (int i = -1; i <= 1; i++)
+                    for (int j = -1; j <= 1; j++)
+                    {
+                        if (CheckCoord.Item1 + i < 0 || CheckCoord.Item1 + i > 9 ||
+                            CheckCoord.Item2 + j < 0 || CheckCoord.Item2 + j > 9)
+                            continue;
+
+                        if (i != 0 || j != 0)
+                        {
+                            if (Math.Abs(this.Pos[CheckCoord.Item1 + i, CheckCoord.Item2 + j]) == 1)
+                            {
+                                bool contains = false;
+                                foreach (var coord in coordsList)
+                                {
+                                    if (coord.Item1 == CheckCoord.Item1 + i && coord.Item2 == CheckCoord.Item2 + j)
+                                        contains = true;
+                                }
+
+                                if (!contains)
+                                {
+                                    var newCoords = new Tuple<int, int>(CheckCoord.Item1 + i, CheckCoord.Item2 + j);
+                                    coordsList.Add(newCoords);
+                                    CheckCoordsList.Add(newCoords);
+                                }
+                            }
+                        }
+                    }
+
+                CheckCoordsList.RemoveAt(0);
+            }
+
+            return coordsList;
+        }
+
+        public bool IsAlive(List<Tuple<int, int>> coordsList)
+        {
+            foreach (Tuple<int ,int> coords in coordsList)
+                for (int i = -1; i <= 1; i++)
+                    for (int j = -1; j <= 1; j++)
+                    {
+                        if (coords.Item1 + i > 9 || coords.Item1 + i < 0 ||
+                            coords.Item2 + j > 9 || coords.Item2 + j < 0)
+                            continue;
+
+                        if (i != 0 || j != 0)
+                        {
+                            if (this.Pos[coords.Item1 + i, coords.Item2 + j] == 1)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+            return false;
+        }
+
+        public void SetPoints(List<Tuple<int, int>> coordsList)
+        {
+            foreach (Tuple<int, int> coords in coordsList)
+            {
+                for (int i = -1; i <= 1; i++)
+                    for (int j = -1; j <= 1; j++)
+                    {
+                        if (i != 0 || j != 0)
+                        {
+                            if (coords.Item1 + i > 9 || coords.Item1 + i < 0 ||
+                                coords.Item2 + j > 9 || coords.Item2 + j < 0)
+                                continue;
+
+                            ref int state1 = ref this.Pos[coords.Item1 + i, coords.Item2 + j];
+                            if (state1 == 0)
+                                state1 = 2;
+                        }
+                    }
+            }
         }
 
         public void UpdateState(Tuple<int, int> coords, int state)
         {
-            this.OpponentPos[coords.Item1, coords.Item2] = state;
+            this.Pos[coords.Item1, coords.Item2] = state;
         }
     }
+
+    public class Human : Player { }
 
     public class AI : Player
     {
         private static Random random = new Random();
-
-        public AI()
-        {
-            this.Pos = new int[10, 10]
-            {
-                { 0, 0, 0, 1, 0, 0, 0, 0, 1, 0 },
-                { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 1, 0, 0, 0, 1, 1, 1, 0, 0 },
-                { 0, 1, 0, 1, 0, 0, 0, 0, 0, 0 },
-                { 0, 1, 0, 1, 0, 0, 1, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
-                { 0, 0, 0, 1, 1, 1, 0, 0, 0, 0 },
-                { 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
-                { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
-            };
-        }
 
         public static Tuple<int, int>? GenerateMove(int[,] Pos, int count)
         {
@@ -160,27 +226,34 @@ namespace battleShip
 
     public partial class MainWindow : Window
     {
-        private List<Player> Players;
         private List<Field[,]> Fields;
 
+        private List<Player> Players;
         private Human human; public AI ai;
 
         private static MediaPlayer mediaPlayer = new MediaPlayer();
-
-        private int MoveCount;
-
-        private static string path = "C:\\Users\\Overlord\\git\\battleShip\\battleShip\\music\\";
-
-        private static List<Uri> trecks = new List<Uri>()
+        private static string pathMessageVoices = "C:\\Users\\Overlord\\git\\battleShip\\battleShip\\music\\";
+        private static Dictionary<Type, List<Uri>> tracks = new Dictionary<Type, List<Uri>>()
         {
-            new Uri($"{path}есть пробитие.mp3"),
-            new Uri($"{path}есть попадание.mp3"),
-            new Uri($"{path}готов.mp3"),
-            new Uri($"{path}орудие повреждено.mp3"),
-            new Uri($"{path}повреждение боеукладки.mp3"),
-            new Uri($"{path}вращение башни невозможно.mp3"),
+            { Type.Human, new List<Uri>() {
+                new Uri($"{pathMessageVoices}есть пробитие.mp3"),
+                new Uri($"{pathMessageVoices}есть попадание.mp3"),
+                new Uri($"{pathMessageVoices}пробитие.mp3"),
+                new Uri($"{pathMessageVoices}готов.mp3"), }
+            },
+
+            { Type.Computer, new List<Uri>() {
+                new Uri($"{pathMessageVoices}орудие повреждено.mp3"),
+                new Uri($"{pathMessageVoices}повреждение боеукладки.mp3"),
+                new Uri($"{pathMessageVoices}вращение башни невозможно.mp3"),
+                new Uri($"{pathMessageVoices}танк уничтожен.mp3"), }
+            },
+
         };
 
+        private static Random random = new Random();
+
+        private int MoveCount;
 
         public MainWindow()
         {
@@ -209,8 +282,8 @@ namespace battleShip
 
         private void RenderAllMap()
         {
-            RenderMap(this.Players[(int)Type.Human].Pos, Type.Human);
-            RenderMap(this.Players[(int)Type.Human].OpponentPos, Type.Computer);
+            RenderMap(this.Players[(int)Type.Human].Pos, Type.Human, showShips : true);
+            RenderMap(this.Players[(int)Type.Computer].Pos, Type.Computer, showShips : false);
         }
 
         private void CreateMap(Grid grid, bool addClick, Type type)
@@ -227,23 +300,18 @@ namespace battleShip
             }
         }
 
-        private void RenderMap(int[,] Pos, Type type)
+        private void RenderMap(int[,] Pos, Type type, bool showShips)
         {
             for (int i = 0; i < 10; i++)
             {
                 for (int j = 0; j < 10; j++)
                 {
-                    if (Pos[i, j] == 1 || Pos[i, j] == -1)
+                    if (Pos[i, j] == 1 && showShips || Pos[i, j] == -1)
                     {
-                        int left, right, top, bottom;
-                        left = right = top = bottom = 2;
+                        var margin = SetMargin(Pos, i, j, showShips : showShips);
 
-                        if (j > 0 && Math.Abs(Pos[i, j - 1]) == 1) left = 0;
-                        if (i > 0 && Math.Abs(Pos[i - 1, j]) == 1) top = 0;
-                        if (j < 9 && Math.Abs(Pos[i, j + 1]) == 1) right = 0;
-                        if (i < 9 && Math.Abs(Pos[i + 1, j]) == 1) bottom = 0;
-
-                        Fields[(int)type][i, j].button.BorderThickness = new Thickness(left, top, right, bottom);
+                        Fields[(int)type][i, j].button.BorderThickness =
+                            new Thickness(margin.left, margin.top, margin.right, margin.bottom);
                         Fields[(int)type][i, j].button.BorderBrush = Brushes.Blue;
                     }
                 }
@@ -255,32 +323,43 @@ namespace battleShip
             Button button = (Button)sender;
             Tuple<int, int> coords = GetCoords(button);
 
-            MakeMove(coords, Type.Human);
+            bool correct = MakeMove(coords, Type.Human);
 
-            await Task.Delay(800);
-            this.GenerateMove(this.human.Pos, 100 - this.MoveCount);
-            this.MoveCount++;
+            if (correct)
+            {
+                await Task.Delay(1200);
+                this.GenerateMove(this.human.Pos, 100 - this.MoveCount);
+                this.MoveCount++;
+            }
         }
 
-        private void MakeMove(Tuple<int, int> coords, Type type)
+        private bool MakeMove(Tuple<int, int> coords, Type type)
         {
-            int state = Players[(int)(type + 1) % 2].GetState(coords);
+            int otherPlayer = (int)(type + 1) % 2;
+            int currentPlayer = (int)type;
+            int state = Players[otherPlayer].GetState(coords);
 
-            if (state == 2 || state == -1)
-            {
-                this.Fields[(int)(type + 1) % 2][coords.Item1, coords.Item2].SetImage(state);
+            if (state != 2 && state != -1)
+                return false;
 
-                if (type == Type.Human)
-                {
-                    this.human.UpdateState(coords, state);
-                    RenderMap(Players[(int)type].OpponentPos, Type.Computer);
-                }
-                else
-                    RenderMap(Players[(int)type].Pos, Type.Human);
-            }
+            this.Players[otherPlayer].UpdateState(coords, state);
 
             if (state == -1)
-                MainWindow.PlayMusic(new Random().Next(3) + (int)type * 3);
+            {
+                List<Tuple<int, int>> coordsList = this.Players[otherPlayer].GetComponents(coords);
+                bool isAlive = this.Players[otherPlayer].IsAlive(coordsList);
+
+                if (!isAlive)
+                    this.Players[otherPlayer].SetPoints(coordsList);
+
+                MainWindow.ChooseTrack(isAlive, type);
+            }
+
+            SetImages((Type)otherPlayer);
+            bool showShips = type == Type.Human ? false : true;
+            RenderMap(this.Players[otherPlayer].Pos, (Type)otherPlayer, showShips: showShips);
+
+            return true;
         }
 
         private void GenerateMove(int[,] Pos, int count)
@@ -301,10 +380,48 @@ namespace battleShip
             return new Tuple<int, int>(row, column);
         }
 
-        private static void PlayMusic(int treck)
+        private static void ChooseTrack(bool isAlive, Type type)
         {
-            MainWindow.mediaPlayer.Open(trecks[treck]);
+            int numTrack;
+            if (isAlive)
+                numTrack = MainWindow.random.Next(3);
+            else
+                numTrack = 3;
+
+            PlayMusic(numTrack, type);
+        }
+
+        private static void PlayMusic(int numTreck, Type type)
+        {
+            MainWindow.mediaPlayer.Open(MainWindow.tracks[type][numTreck]);
             MainWindow.mediaPlayer.Play();
+        }
+
+        private static (int left, int top, int right, int bottom) SetMargin(int[,] Pos, int row, int column, bool showShips)
+        {
+            (int left, int top, int right, int bottom) margin = (2, 2, 2, 2);
+
+            if (column > 0 && ShowShips(Pos[row, column - 1], showShips) == -1) margin.left = 0;
+            if (row > 0 && ShowShips(Pos[row - 1, column], showShips) == -1) margin.top = 0;
+            if (column < 9 && ShowShips(Pos[row, column + 1], showShips) == -1) margin.right = 0;
+            if (row < 9 && ShowShips(Pos[row + 1, column], showShips) == -1) margin.bottom = 0;
+
+            return margin;
+        }
+
+        private static int ShowShips(int state, bool showShips)
+        {
+            if (showShips) return -Math.Abs(state);
+            else return state;
+        }
+
+        private void SetImages(Type type)
+        {
+            for (int i = 0; i < 10; i++)
+                for (int j = 0; j < 10; j++)
+                {
+                    this.Fields[(int)type][i, j].SetImage(this.Players[(int)type].Pos[i,j]);
+                }
         }
     }
 }
